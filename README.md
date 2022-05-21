@@ -1,3 +1,13 @@
+# Run with local json-server datbase
+
+To run using development build,
+Run
+### `npm start`
+and
+### `npm run server`
+in separate terminals.
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
