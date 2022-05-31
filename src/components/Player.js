@@ -14,12 +14,12 @@ const Player = ({ playerKey, player }) => {
     }
 
     const availableColors = colors.map((color) => (
-        color.selected !== true ? 
-        (<MenuItem key={color.id} value={color.name}>{color.name}</MenuItem>)
-        : null))
+        color.selected !== true ?
+            (<MenuItem key={color.id} value={color.name}>{color.name}</MenuItem>)
+            : null))
 
     return (
-        <Card key = {playerKey} className='player-box' sx={{ maxwidth: '20vw' }} style={{ backgroundColor: value }}>
+        <Card key={playerKey} className='player-box' sx={{ maxwidth: '20vw' }} style={{ backgroundColor: value }}>
             <h4 className='player-heading'>Player {player.id}</h4>
             <hr />
             <br />

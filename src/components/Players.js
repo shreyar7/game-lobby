@@ -1,5 +1,6 @@
 import React from 'react'
 import Player from "./Player"
+import Form from "./Form"
 import { Container } from '@mui/material';
 import { useContext } from 'react'
 import { PlayerContext } from '../contexts/PlayerContext';
@@ -14,7 +15,8 @@ const Players = () => {
 
     return (
         <Container className='players-container'>
-            { playerComponents }
+            {playerComponents}
+            <Form />
         </Container>
     )
 }
