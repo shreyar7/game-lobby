@@ -7,10 +7,10 @@ import { PlayerContext } from '../contexts/PlayerContext';
 
 const Players = () => {
 
-    const [players, setPlayers] = useContext(PlayerContext)
+    const [players] = useContext(PlayerContext)
 
-    const playerComponents = players.map((player) => (
-        <Player key={player.id} player={player} />
+    const playerComponents = players.map((player, index) => (
+        <Player key={index} player={player} playerIndex={index+1} />
     ))
 
     return (

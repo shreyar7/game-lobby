@@ -1,11 +1,22 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card,  Button, Grid, TextField } from '@mui/material';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../services/firestore';
 
 const Form = () => {
 
-    const handleSubmit = (e) => {
+    const [loginEmail, setLoginEmail] = useState("")
+    const [loginPassword, setLoginPassword] = useState("")
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Submit')
+        try {
+            const user = await signInWithEmailAndPassword(auth, loginEmail, loginPassword)
+        }
+        catch (error) {
+            console.log(error.message)
+        }
+        console.log('successful login')
     }
 
     return (
@@ -13,10 +24,13 @@ const Form = () => {
             <h4 className='player-heading'>Login</h4>
             <hr />
             <br />
-            <form onSubmit={handleSubmit}>
+            <form id="player-login-form" onSubmit={handleSubmit}>
                 <Grid container alignItems={"center"} justifyContent="center" direction={"column"}>
                     <Grid item>
                         <TextField id="login-id"
+                            onChange={(event) => {
+                                setLoginEmail(event.target.value)
+                            }}
                             type="email"
                             label="E-Mail"
                             variant='outlined'
@@ -26,6 +40,9 @@ const Form = () => {
                     </Grid>
                     <Grid item>
                         <TextField id="login-password"
+                            onChange={(event) => {
+                                setLoginPassword(event.target.value)
+                            }}
                             type={"password"}
                             label="Password"
                             variant='outlined'

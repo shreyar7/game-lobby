@@ -1,5 +1,6 @@
+import { collection, getDocs, doc, where, getDoc, updateDoc, query } from "firebase/firestore";
 import React, { useState, useEffect, createContext } from "react";
-
+import { db } from '../services/firestore'
 
 export const PlayerContext = createContext()
 
@@ -8,70 +9,41 @@ const PlayerContextProvider = (props) => {
     const [players, setPlayers] = useState([])
     const [colors, setColors] = useState([])
 
+
     useEffect(() => {
         const getPlayers = async () => {
-            const playersFromServer = await fetchPlayers()
-            setPlayers(playersFromServer)
+            const playersCollection = collection(db, "players")
+            const playersFromServer = await getDocs(playersCollection)
+            setPlayers(playersFromServer.docs.map((doc) =>
+                ({ ...doc.data(), id: doc.id })))
         }
 
         getPlayers()
     }, [])
 
 
-    const fetchPlayers = async () => {
-        const res = await fetch('http://localhost:5000/players')
-        const data = await res.json()
-
-        return data
-    }
-
-
     useEffect(() => {
         const getColors = async () => {
-            const colorsFromServer = await fetchColors()
-            setColors(colorsFromServer)
+            const colorsCollection = collection(db, "colors")
+            const colorsFromServer = await getDocs(colorsCollection)
+            setColors(colorsFromServer.docs.map((doc) =>
+                ({ ...doc.data(), id: doc.id })))
         }
 
         getColors()
     }, [])
 
 
-    const fetchPlayer = async (id) => {
-        const res = await fetch(`http://localhost:5000/players/${id}`)
-        const data = await res.json()
-
-        return data
-    }
-
-
-    const fetchColors = async () => {
-        const res = await fetch('http://localhost:5000/colors')
-        const data = await res.json()
-
-        return data
-    }
-
-
-    const fetchColor = async (colorName) => {
-        const res = await fetch(`http://localhost:5000/colors?name=${colorName}`)
-        const data = await res.json()
-
-        return data[0]
-    }
-
-
     const updateColorDB = async (color, sel) => {
-        const selectedColor = await fetchColor(color)
-        const updatedSelectedColor = { ...selectedColor, selected: sel }
-        const selectedColorRes = await fetch(`http://localhost:5000/colors/${updatedSelectedColor.id}`,
-            {
-                method: 'PUT',
-                headers: {
-                    'Content-type': 'application/json',
-                },
-                body: JSON.stringify(updatedSelectedColor)
-            })
-        const selectedColorData = await selectedColorRes.json()
+
+        const matchingColors = query(collection(db, 'colors'), where('code', '==', color));
+        const colorsSnapshot = await getDocs(matchingColors);
+        const colorDoc = colorsSnapshot.docs[0]
+        const colorDocumentRef = doc(db, "colors", colorDoc.id)
+
+        const updatedField = { selected: sel }
+        await updateDoc(colorDocumentRef, updatedField)
+        const selectedColorData = await getDoc(colorDocumentRef)
 
         return selectedColorData
     }
@@ -80,26 +52,20 @@ const PlayerContextProvider = (props) => {
     const changeColor = async (id, newColor, oldColor) => {
 
         //Update Player Color
-        const playerToUpdate = await fetchPlayer(id)
-        const updatedPlayer = { ...playerToUpdate, color: newColor }
-        const playerRes = await fetch(`http://localhost:5000/players/${id}`,
-            {
-                method: 'PUT',
-                headers: {
-                    'Content-type': 'application/json',
-                },
-                body: JSON.stringify(updatedPlayer)
-            })
-        const playerData = await playerRes.json()
+        const playerDocumentRef = doc(db, "players", id)
+        const updatedPlayerField = { color: newColor }
+        await updateDoc(playerDocumentRef, updatedPlayerField)
+        const playerData = await getDoc(playerDocumentRef)
+
         setPlayers(players.map((player) => player.id === id
-            ? { ...player, color: playerData.color } : player));
+            ? { ...playerData.data(), id: playerData.id } : player));
 
         //Update Colors DB to track selected and available colors
         const selectedColorData = await updateColorDB(newColor, true)
         const removedColorData = await updateColorDB(oldColor, false)
         setColors(colors.map((color) =>
-            color.name === newColor ? { ...color, selected: selectedColorData.selected }
-                : color.name === oldColor ? { ...color, selected: removedColorData.selected }
+            color.code === newColor ? { ...selectedColorData.data(), id: selectedColorData.id }
+                : color.code === oldColor ? { ...removedColorData.data(), id: removedColorData.id }
                     : color));
     }
 
