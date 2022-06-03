@@ -1,9 +1,15 @@
-import React, { useState } from 'react'
-import { Card,  Button, Grid, TextField } from '@mui/material';
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../services/firestore';
+import React, { useState, useRef, useContext } from 'react'
+import { Card, Button, Grid, TextField } from '@mui/material';
+import { playerLogin } from '../functions/auth';
+import { PlayerContext } from '../contexts/PlayerContext';
+
 
 const Form = () => {
+
+    const emailRef = useRef()
+    const passwordRef = useRef()
+    const [players, changePlayerColor, updatePlayerLogin] = useContext(PlayerContext)
+
 
     const [loginEmail, setLoginEmail] = useState("")
     const [loginPassword, setLoginPassword] = useState("")
@@ -11,12 +17,16 @@ const Form = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const user = await signInWithEmailAndPassword(auth, loginEmail, loginPassword)
+            playerLogin(loginEmail, loginPassword).then(
+                () => { 
+                    updatePlayerLogin('email', loginEmail, true)
+                }
+            )
+
         }
         catch (error) {
             console.log(error.message)
         }
-        console.log('successful login')
     }
 
     return (
@@ -32,6 +42,7 @@ const Form = () => {
                                 setLoginEmail(event.target.value)
                             }}
                             type="email"
+                            ref={emailRef}
                             label="E-Mail"
                             variant='outlined'
                             size="small"
@@ -43,6 +54,7 @@ const Form = () => {
                             onChange={(event) => {
                                 setLoginPassword(event.target.value)
                             }}
+                            ref={passwordRef}
                             type={"password"}
                             label="Password"
                             variant='outlined'
@@ -50,7 +62,7 @@ const Form = () => {
                             sx={{ maxwidth: '10vw' }}
                             style={{ backgroundColor: "#FFFFFF", margin: "5%", alignSelf: 'center' }} />
                     </Grid>
-                    <Button id="login"
+                    <Button id="login-button"
                         type="submit"
                         size="small"
                         sx={{ maxwidth: '10vw' }} variant="contained">

@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, where, getDoc, updateDoc, query } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
 import React, { useState, useEffect, createContext } from "react";
 import { db } from '../services/firestore'
 
@@ -7,8 +7,6 @@ export const PlayerContext = createContext()
 const PlayerContextProvider = (props) => {
 
     const [players, setPlayers] = useState([])
-    const [colors, setColors] = useState([])
-
 
     useEffect(() => {
         const getPlayers = async () => {
@@ -17,39 +15,11 @@ const PlayerContextProvider = (props) => {
             setPlayers(playersFromServer.docs.map((doc) =>
                 ({ ...doc.data(), id: doc.id })))
         }
-
+        
         getPlayers()
     }, [])
 
-
-    useEffect(() => {
-        const getColors = async () => {
-            const colorsCollection = collection(db, "colors")
-            const colorsFromServer = await getDocs(colorsCollection)
-            setColors(colorsFromServer.docs.map((doc) =>
-                ({ ...doc.data(), id: doc.id })))
-        }
-
-        getColors()
-    }, [])
-
-
-    const updateColorDB = async (color, sel) => {
-
-        const matchingColors = query(collection(db, 'colors'), where('code', '==', color));
-        const colorsSnapshot = await getDocs(matchingColors);
-        const colorDoc = colorsSnapshot.docs[0]
-        const colorDocumentRef = doc(db, "colors", colorDoc.id)
-
-        const updatedField = { selected: sel }
-        await updateDoc(colorDocumentRef, updatedField)
-        const selectedColorData = await getDoc(colorDocumentRef)
-
-        return selectedColorData
-    }
-
-
-    const changeColor = async (id, newColor, oldColor) => {
+    const changePlayerColor = async (id, newColor) => {
 
         //Update Player Color
         const playerDocumentRef = doc(db, "players", id)
@@ -60,18 +30,26 @@ const PlayerContextProvider = (props) => {
         setPlayers(players.map((player) => player.id === id
             ? { ...playerData.data(), id: playerData.id } : player));
 
-        //Update Colors DB to track selected and available colors
-        const selectedColorData = await updateColorDB(newColor, true)
-        const removedColorData = await updateColorDB(oldColor, false)
-        setColors(colors.map((color) =>
-            color.code === newColor ? { ...selectedColorData.data(), id: selectedColorData.id }
-                : color.code === oldColor ? { ...removedColorData.data(), id: removedColorData.id }
-                    : color));
     }
 
+    const updatePlayerLogin = async (uField, uValue, loginStatus) => {
 
-    const value = [players, setPlayers, colors, setColors, changeColor]
+        const matchingPlayers = query(collection(db, 'players'), where(uField, '==', uValue));
+        const playersSnapshot = await getDocs(matchingPlayers);
+        const playerDoc = playersSnapshot.docs[0]
+        const playerDocumentRef = doc(db, "players", playerDoc.id)
 
+        const updatedField = { loggedIn: loginStatus }
+        await updateDoc(playerDocumentRef, updatedField)
+        const selectedPlayerData = await getDoc(playerDocumentRef)
+
+        setPlayers(players.map((player) => player.id === playerDoc.id
+            ? { ...selectedPlayerData.data(), id: selectedPlayerData.id } : player));
+
+        return selectedPlayerData
+    }
+
+    const value = [players, changePlayerColor, updatePlayerLogin, setPlayers]
 
     return (
         <PlayerContext.Provider value={value}>

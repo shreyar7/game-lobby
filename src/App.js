@@ -6,6 +6,7 @@ import Players from './components/Players';
 import Footer from './components/Footer';
 import About from './components/About';
 import PlayerContextProvider from './contexts/PlayerContext';
+import ColorContextProvider from './contexts/ColorContext';
 
 
 function App() {
@@ -15,10 +16,12 @@ function App() {
       <Router>
         <Header />
         <PlayerContextProvider>
+        <ColorContextProvider>
           <Routes>
             <Route path="/" exact element={<Players />} />
             <Route path='/about' element={<About />} />
           </Routes>
+        </ColorContextProvider>
         </PlayerContextProvider>
         <Footer />
       </Router>
