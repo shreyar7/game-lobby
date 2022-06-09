@@ -10,13 +10,13 @@ import { getDownloadURL, ref } from 'firebase/storage';
 const Player = ({ playerIndex, player }) => {
 
     const currentUser = useAuth();
-    const [colors, changeColorStatus] = useContext(ColorContext)
+    const [colors, updateColorDB] = useContext(ColorContext)
     const [players, changePlayerColor, updatePlayerLogin] = useContext(PlayerContext)
     const [url, setUrl] = useState("") 
 
     const changeValue = (event) => {
         changePlayerColor(player.id, event.target.value);
-        changeColorStatus(player.color, event.target.value);
+        updateColorDB(player.color, event.target.value);
     }
 
     const handleLogout = async (e) => {
@@ -59,19 +59,6 @@ const Player = ({ playerIndex, player }) => {
                 <img src={url} className='profile-image' alt="profile"/>
                 : null
             }
-            {/* {currentUser != null ?
-                (currentUser.uid === player.uid ?
-                    <div>
-                        <Button
-                            id="upload-button"
-                            onClick={handleUpload}
-                            size="small"
-                            sx={{ maxwidth: '10vw' }} variant="contained">
-                            Upload Image
-                        </Button>
-                    </div>
-                    : null)
-                : null} */}
             <br />
             <hr />
             <br />

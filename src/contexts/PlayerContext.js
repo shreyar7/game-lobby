@@ -1,6 +1,9 @@
-import { collection, getDocs, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
+// import { collection, getDocs, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
 import React, { useState, useEffect, createContext } from "react";
-import { db } from '../services/firestore'
+import { app } from '../services/firestore'
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+const functions = getFunctions(app);
 
 export const PlayerContext = createContext()
 
@@ -10,43 +13,38 @@ const PlayerContextProvider = (props) => {
 
     useEffect(() => {
         const getPlayers = async () => {
-            const playersCollection = collection(db, "players")
-            const playersFromServer = await getDocs(playersCollection)
-            setPlayers(playersFromServer.docs.map((doc) =>
-                ({ ...doc.data(), id: doc.id })))
+            const retrieveCollection = httpsCallable(functions, 'retrieveCollection')
+            retrieveCollection({"collection" : "players"}).then(result => {
+                setPlayers(result.data)
+            })
         }
-        
         getPlayers()
     }, [])
 
     const changePlayerColor = async (id, newColor) => {
-
         //Update Player Color
-        const playerDocumentRef = doc(db, "players", id)
-        const updatedPlayerField = { color: newColor }
-        await updateDoc(playerDocumentRef, updatedPlayerField)
-        const playerData = await getDoc(playerDocumentRef)
-
-        setPlayers(players.map((player) => player.id === id
-            ? { ...playerData.data(), id: playerData.id } : player));
-
+        const updatePlayer = httpsCallable(functions, 'updatePlayer')
+        updatePlayer({
+            "playerId": id,
+            "colorCode": newColor
+        }).then(result => {
+            setPlayers(players.map((player) => player.id === id
+            ? result.data[1] : player));
+        })
     }
 
     const updatePlayerLogin = async (uField, uValue, loginStatus) => {
-
-        const matchingPlayers = query(collection(db, 'players'), where(uField, '==', uValue));
-        const playersSnapshot = await getDocs(matchingPlayers);
-        const playerDoc = playersSnapshot.docs[0]
-        const playerDocumentRef = doc(db, "players", playerDoc.id)
-
-        const updatedField = { loggedIn: loginStatus }
-        await updateDoc(playerDocumentRef, updatedField)
-        const selectedPlayerData = await getDoc(playerDocumentRef)
-
-        setPlayers(players.map((player) => player.id === playerDoc.id
-            ? { ...selectedPlayerData.data(), id: selectedPlayerData.id } : player));
-
-        return selectedPlayerData
+        const updateLogin = httpsCallable(functions, 'updateLogin')
+        updateLogin({
+            "field": uField,
+            "value": loginStatus,
+            "id": uValue
+        }).then(result => {
+            setPlayers(players.map((player) => 
+            player.uid === uValue ? result.data[1]
+            : player.email === uValue ? result.data[1]
+            : player));
+        })
     }
 
     const value = [players, changePlayerColor, updatePlayerLogin, setPlayers]
