@@ -1,9 +1,4 @@
-// import { collection, getDocs, doc, where, getDoc, updateDoc, query } from "firebase/firestore";
 import React, { useState, useEffect, createContext } from "react";
-import { app } from '../services/firestore'
-import { getFunctions, httpsCallable } from "firebase/functions";
-
-const functions = getFunctions(app);
 
 export const ColorContext = createContext()
 
@@ -13,31 +8,34 @@ const ColorContextProvider = (props) => {
 
     useEffect(() => {
         const getColors = async () => {
-            const retrieveCollection = httpsCallable(functions, 'retrieveCollection')
-            retrieveCollection({ "collection": "colors" }).then(result => {
-                setColors(result.data)
-            })
+            const retrieveColors = await fetch('http://localhost:3005/getColors')
+            const colorsJson = await retrieveColors.json()
+            setColors(colorsJson)
         }
         getColors()
     }, [])
 
     const updateColorDB = async (oldColor, newColor) => {
-        const updateColor = httpsCallable(functions, 'updateColor')
-        updateColor({
-            "colorCode": oldColor,
-            "select": false
-        }).then(prevColor => {
-            updateColor({
-                "colorCode": newColor,
-                "select": true
-            }).then(currColor => {
+        const updatePrevColor = await fetch(
+            `http://localhost:3005/setColorSelect/`,
+            {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    "prev": oldColor,
+                    "curr": newColor
+                })
+            }
+        ).then(
+            async res => {
+                const resJson = res.json()
                 setColors(colors.map((color) =>
-                    color.code === oldColor ? prevColor.data[1]
-                        : color.code === newColor ? currColor.data[1]
-                            : color));
-
-            })
-        })
+                            color.code === oldColor ? resJson[1]
+                                : color.code === newColor ? resJson[0]
+                                    : color))
+            window.location = "/"
+            }
+        )
     }
 
     const value = [colors, updateColorDB, setColors]

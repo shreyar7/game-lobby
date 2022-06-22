@@ -1,9 +1,4 @@
-// import { collection, getDocs, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
 import React, { useState, useEffect, createContext } from "react";
-import { app } from '../services/firestore'
-import { getFunctions, httpsCallable } from "firebase/functions";
-
-const functions = getFunctions(app);
 
 export const PlayerContext = createContext()
 
@@ -13,37 +8,46 @@ const PlayerContextProvider = (props) => {
 
     useEffect(() => {
         const getPlayers = async () => {
-            const retrieveCollection = httpsCallable(functions, 'retrieveCollection')
-            retrieveCollection({"collection" : "players"}).then(result => {
-                setPlayers(result.data)
-            })
+            const retrievePlayers = await fetch('http://localhost:3005/getPlayers')
+            const playersJson = await retrievePlayers.json()
+            setPlayers(playersJson)
         }
         getPlayers()
     }, [])
 
     const changePlayerColor = async (id, newColor) => {
-        //Update Player Color
-        const updatePlayer = httpsCallable(functions, 'updatePlayer')
-        updatePlayer({
-            "playerId": id,
-            "colorCode": newColor
-        }).then(result => {
-            setPlayers(players.map((player) => player.id === id
-            ? result.data[1] : player));
-        })
+
+        const updatePlayer = await fetch(
+            `http://localhost:3005/setPlayerColor/`,
+            {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    "id": id,
+                    "newColor": newColor
+                })
+            }).then(result => {
+                const resJson = result.json()
+                setPlayers(players.map((player) => player.id === id
+                    ? resJson : player));
+            })
     }
 
-    const updatePlayerLogin = async (uField, uValue, loginStatus) => {
-        const updateLogin = httpsCallable(functions, 'updateLogin')
-        updateLogin({
-            "field": uField,
-            "value": loginStatus,
-            "id": uValue
-        }).then(result => {
-            setPlayers(players.map((player) => 
-            player.uid === uValue ? result.data[1]
-            : player.email === uValue ? result.data[1]
-            : player));
+    const updatePlayerLogin = async (uField, loginStatus) => {
+        const updateLogin = await fetch(
+            `http://localhost:3005/setLogin/`,
+            {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    "state": loginStatus,
+                    "field": uField
+                })
+            }
+        ).then((result) => {
+            const resJson = result.json()
+            setPlayers(players.map((player) => player.email === uField ? resJson
+                : player));
         })
     }
 
