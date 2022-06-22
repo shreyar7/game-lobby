@@ -1,6 +1,4 @@
-import { collection, getDocs, doc, where, getDoc, updateDoc, query } from "firebase/firestore";
 import React, { useState, useEffect, createContext } from "react";
-import { db } from '../services/firestore'
 
 export const ColorContext = createContext()
 
@@ -10,40 +8,37 @@ const ColorContextProvider = (props) => {
 
     useEffect(() => {
         const getColors = async () => {
-            const colorsCollection = collection(db, "colors")
-            const colorsFromServer = await getDocs(colorsCollection)
-            setColors(colorsFromServer.docs.map((doc) =>
-                ({ ...doc.data(), id: doc.id })))
+            const retrieveColors = await fetch('http://localhost:3005/getColors')
+            const colorsJson = await retrieveColors.json()
+            setColors(colorsJson)
         }
-
         getColors()
     }, [])
 
-    const updateColorDB = async (color, sel) => {
-
-        const matchingColors = query(collection(db, 'colors'), where('code', '==', color));
-        const colorsSnapshot = await getDocs(matchingColors);
-        const colorDoc = colorsSnapshot.docs[0]
-        const colorDocumentRef = doc(db, "colors", colorDoc.id)
-
-        const updatedField = { selected: sel }
-        await updateDoc(colorDocumentRef, updatedField)
-        const selectedColorData = await getDoc(colorDocumentRef)
-
-        return selectedColorData
+    const updateColorDB = async (oldColor, newColor) => {
+        const updatePrevColor = await fetch(
+            `http://localhost:3005/setColorSelect/`,
+            {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    "prev": oldColor,
+                    "curr": newColor
+                })
+            }
+        ).then(
+            async res => {
+                const resJson = res.json()
+                setColors(colors.map((color) =>
+                            color.code === oldColor ? resJson[1]
+                                : color.code === newColor ? resJson[0]
+                                    : color))
+            window.location = "/"
+            }
+        )
     }
 
-    const changeColorStatus = async (oldColor, newColor) => {
-        //Update Colors DB to track selected and available colors
-        const removedColorData = await updateColorDB(oldColor, false)
-        const selectedColorData = await updateColorDB(newColor, true)
-        setColors(colors.map((color) =>
-            color.code === oldColor ? { ...removedColorData.data(), id: removedColorData.id }
-                : color.code === newColor ? { ...selectedColorData.data(), id: selectedColorData.id }
-                    : color));
-    }
-
-    const value = [colors, changeColorStatus, setColors]
+    const value = [colors, updateColorDB, setColors]
 
 
     return (

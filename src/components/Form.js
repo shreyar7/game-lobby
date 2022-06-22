@@ -1,6 +1,5 @@
 import React, { useState, useRef, useContext } from 'react'
 import { Card, Button, Grid, TextField } from '@mui/material';
-import { playerLogin } from '../functions/auth';
 import { PlayerContext } from '../contexts/PlayerContext';
 
 
@@ -17,11 +16,19 @@ const Form = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            playerLogin(loginEmail, loginPassword).then(
-                () => { 
-                    updatePlayerLogin('email', loginEmail, true)
+            const res = await fetch(`http://localhost:3005/checkPassword/${loginEmail}`, {
+                method: "GET",
+                headers: {"Content-Type": "application/json"}
+            }).then(
+                async (res) => { 
+                    const jsonData = await res.json()
+                    if (jsonData.password === loginPassword) {
+                        updatePlayerLogin(loginEmail, true)
+                    }
                 }
             )
+
+        window.location = "/"
 
         }
         catch (error) {
